@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: pulsepass
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pulsepass}
+    username: ${DB_USER:pulsepass}
+    password: ${DB_PASSWORD:pulsepass}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
