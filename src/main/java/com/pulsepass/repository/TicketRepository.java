@@ -15,6 +15,10 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     List<Ticket> findByUserEmail(String email);
 
+    List<Ticket> findByUserEmailIgnoreCaseOrderByPurchaseDateDesc(String email);
+
+    long countByEventEventCodeAndStatus(String eventCode, TicketStatus status);
+
     List<Ticket> findByUserEmailAndStatus(String email, TicketStatus status);
 
     List<Ticket> findByEventEventCodeAndStatus(String eventCode, TicketStatus status);
