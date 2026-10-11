@@ -1,5 +1,5 @@
 ﻿Taller de PulsePass
-Proyecto académico de la capa de persistencia de una plataforma de eventos, artistas y entradas.
+Proyecto académico (persistencia, servicios y API REST) de una plataforma de eventos, artistas y entradas.
 Incluye el modelo relacional, las migraciones con Flyway, las entidades JPA, los repositories de
 Spring Data y las pruebas de integración contra un PostgreSQL real.
 
@@ -184,3 +184,80 @@ prueba puede pasar en H2 y fallar en PostgreSQL.
 Con una tabla de inventario, por ejemplo TicketInventory(event, type, total, sold), que se
 actualice en la misma transacción que crea el ticket, con bloqueo optimista (@Version) o un
 UPDATE condicionado. También separando Order y Payment de Ticket.
+
+
+Capa de servicios (fase 2)
+
+Implementa el PRD "Capa de Servicios": interfaces `*Service`, implementaciones `@Service`, DTOs `record`,
+mappers MapStruct, excepciones de dominio y reglas de negocio (BR-*) con transacciones.
+
+```
+src/main/java/com/pulsepass
+├── config       ClockConfig (Clock inyectable para reglas basadas en "ahora")
+├── dto
+│   ├── request  CreateEventRequest, RegisterUserRequest, PurchaseTicketRequest
+│   └── response VenueResponse, ArtistResponse, EventResponse, EventSummaryResponse, UserResponse, TicketResponse
+├── mapper       VenueMapper, ArtistMapper, EventMapper, UserMapper, TicketMapper (MapStruct)
+├── exception    ResourceNotFoundException, DuplicateResourceException, BusinessRuleException
+└── service
+    ├── VenueService, ArtistService, EventService, UserService, TicketService
+    ├── TicketPricingPolicy   precio por tipo de ticket (GENERAL x1, STUDENT x0.5, VIP x2.5, BACKSTAGE x4)
+    ├── TicketCodeGenerator   códigos únicos de ticket
+    └── impl                  implementaciones (constructor injection, @Transactional)
+```
+
+Estrategia de precio: el cliente nunca envía el precio. El precio base se configura con
+`pulsepass.pricing.base-price` (por defecto 100.00) y se multiplica según el `TicketType`.
+
+Los unit tests de Service (`src/test/java/com/pulsepass/service`, `.../mapper`) usan JUnit 5, Mockito y AssertJ,
+sin Spring ni PostgreSQL. Se ejecutan con `mvn clean test` junto con los tests de integración existentes.
+
+
+Capa de controladores REST (fase 3)
+
+Implementa el PRD "Capa de Controladores REST": los casos de uso de los Services se exponen por HTTP
+sin duplicar reglas de negocio, sin tocar Repository y sin devolver entidades JPA.
+
+```
+src/main/java/com/pulsepass
+├── controller   VenueController, EventController, ArtistController, UserController, TicketController
+├── dto
+│   ├── request  CreateEventRequest, RegisterUserRequest, PurchaseTicketRequest (con Bean Validation)
+│   └── response ... + ErrorResponse
+└── exception    ... + GlobalExceptionHandler (@RestControllerAdvice)
+```
+
+Endpoints principales (20 operaciones, una por cada método público de los Services):
+
+| Método | Endpoint | Éxito |
+|---|---|---|
+| GET | /api/venues/{code} · /api/venues/active | 200 |
+| POST | /api/events | 201 |
+| GET | /api/events/{eventCode} · /api/events/published · /api/events/by-artist?stageName= | 200 |
+| PATCH | /api/events/{eventCode}/publish | 200 |
+| POST | /api/events/{eventCode}/artists/{artistId} | 200 |
+| GET | /api/artists/{id} · /api/artists/by-stage-name?stageName= · /api/artists/active | 200 |
+| POST | /api/users | 201 |
+| GET | /api/users/by-email?email= · /api/users/by-username?username= | 200 |
+| POST | /api/tickets | 201 |
+| GET | /api/tickets/{ticketCode} · /api/tickets/by-user?email= · /api/events/{eventCode}/tickets/paid | 200 |
+| PATCH | /api/tickets/{ticketCode}/cancel · /api/tickets/{ticketCode}/use | 200 |
+
+Errores (todos con el cuerpo `ErrorResponse`: timestamp, status, error, message, details):
+
+| Condición | HTTP |
+|---|---|
+| Bean Validation, JSON mal formado, parámetro faltante o de tipo inválido | 400 |
+| ResourceNotFoundException | 404 |
+| DuplicateResourceException, BusinessRuleException | 409 |
+| Excepción inesperada (mensaje genérico, sin stack trace) | 500 |
+
+Pruebas de controller (`src/test/java/com/pulsepass/controller`): usan `@WebMvcTest`, `MockMvc` y
+`@MockitoBean` para los Services, así que no necesitan PostgreSQL ni Docker. Verifican status,
+Content-Type, JSON con `jsonPath`, la interacción con el Service (`verify`) y que un request
+inválido nunca lo invoca (`verify(..., never())`).
+
+```bash
+mvn clean test                                   # todo el proyecto
+mvn test -Dtest='*ControllerTest,ControllerLayerDesignTest,GlobalExceptionHandlerTest'   # solo la fase 3
+```
