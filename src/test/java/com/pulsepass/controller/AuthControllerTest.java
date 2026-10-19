@@ -22,7 +22,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-/** Sin @WithMockUser: el login debe ser accesible de forma anónima (ruta pública). */
 @WebMvcTest(AuthController.class)
 @Import(SecurityTestConfig.class)
 class AuthControllerTest {

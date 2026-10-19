@@ -64,17 +64,12 @@ public class AuthServiceImpl implements AuthService {
         this.clock = clock;
     }
 
-    /**
-     * Atómico: UserService.register (REQUIRED) se une a esta transacción, de modo que si fallan el
-     * hash, la credencial o el rol se revierte también el usuario (NFR-SEC004 / UC-SEC-01).
-     */
     @Override
     @Transactional
     public UserResponse register(RegisterUserRequest request) {
         requireNonNull(request, "request");
         requireText(request.password(), "password");
 
-        // Unicidad y reglas de negocio siguen siendo responsabilidad de UserService.
         UserResponse created = userService.register(request);
 
         User user = userRepository.findById(created.id())
@@ -83,7 +78,6 @@ public class AuthServiceImpl implements AuthService {
         credentialRepository.save(new UserCredential(
                 user, passwordEncoder.encode(request.password()), LocalDateTime.now(clock)));
 
-        // NFR-SEC009: el rol inicial es SIEMPRE USER; el request no tiene ningún campo de rol.
         roleRepository.save(new UserRole(user.getId(), Role.USER));
 
         return created;
@@ -100,7 +94,7 @@ public class AuthServiceImpl implements AuthService {
                     UsernamePasswordAuthenticationToken.unauthenticated(
                             request.identifier().trim(), request.password()));
         } catch (AuthenticationException ex) {
-            // Se registra el tipo de fallo, nunca el identificador ni la contraseña (NFR-SEC006).
+
             log.warn("Login failed: {}", ex.getClass().getSimpleName());
             throw new InvalidCredentialsException();
         }

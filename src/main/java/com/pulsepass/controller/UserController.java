@@ -31,7 +31,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterUserRequest request) {
-        // Registro atómico User + credencial + ROLE_USER (PRD 9.3): ya no se invoca UserService directamente.
+
         UserResponse created = authService.register(request);
         return ResponseEntity.created(URI.create("/api/users/by-username?username=" + created.username()))
                 .body(created);

@@ -62,30 +62,24 @@ public class EventServiceImpl implements EventService {
         requireNonNull(request.eventDate(), "eventDate");
         requireText(request.venueCode(), "venueCode");
 
-        // BR-EVENT-001
         if (eventRepository.existsByEventCode(request.eventCode())) {
             throw new DuplicateResourceException("Event already exists: " + request.eventCode());
         }
 
-        // BR-EVENT-002
         Venue venue = venueRepository.findByCode(request.venueCode())
                 .orElseThrow(() -> ResourceNotFoundException.of("Venue", request.venueCode()));
 
-        // BR-EVENT-003
         requireActiveVenue(venue, "create an event");
 
-        // BR-EVENT-004
         if (!request.eventDate().isAfter(now())) {
             throw new BusinessRuleException("Event date must be in the future: " + request.eventDate());
         }
 
-        // BR-EVENT-006 (null se interpreta como "sin restricción")
         int minimumAge = request.minimumAge() == null ? 0 : request.minimumAge();
         if (minimumAge < 0) {
             throw new BusinessRuleException("Minimum age must be greater than or equal to 0.");
         }
 
-        // BR-EVENT-005: el estado inicial lo decide el sistema, nunca el request.
         Event event = new Event(request.eventCode(), request.name(), request.category(),
                 EventStatus.DRAFT, request.eventDate(), venue);
         event.setDescription(request.description());
@@ -114,17 +108,16 @@ public class EventServiceImpl implements EventService {
     public EventResponse publish(String eventCode) {
         Event event = getEvent(eventCode);
 
-        // BR-EVENT-007
         if (event.getStatus() != EventStatus.DRAFT) {
             throw new BusinessRuleException("Only DRAFT events can be published. Event "
                     + eventCode + " is " + event.getStatus() + ".");
         }
-        // BR-EVENT-008
+
         if (!event.getEventDate().isAfter(now())) {
             throw new BusinessRuleException("Cannot publish event " + eventCode
                     + ": its date is no longer in the future.");
         }
-        // BR-EVENT-009
+
         requireActiveVenue(event.getVenue(), "publish event " + eventCode);
 
         event.setStatus(EventStatus.PUBLISHED);
@@ -138,12 +131,11 @@ public class EventServiceImpl implements EventService {
         Artist artist = artistRepository.findById(artistId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Artist", artistId));
 
-        // BR-EVENT-011
         if (STATUSES_CLOSED_TO_ARTISTS.contains(event.getStatus())) {
             throw new BusinessRuleException("Cannot add artists to event " + eventCode
                     + " because it is " + event.getStatus() + ".");
         }
-        // BR-EVENT-010
+
         if (event.getArtists().contains(artist)) {
             throw new DuplicateResourceException("Artist " + artist.getStageName()
                     + " is already associated with event " + eventCode + ".");

@@ -9,10 +9,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-/**
- * Aplica la SecurityConfig REAL en los tests @WebMvcTest (no se desactivan filtros: PRD 17.2).
- * El UserDetailsService es un stub vacío porque en MockMvc la identidad se simula con @WithMockUser.
- */
 @TestConfiguration(proxyBeanMethods = false)
 @Import({SecurityConfig.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class,
         com.pulsepass.security.JwtAuthenticationFilter.class})

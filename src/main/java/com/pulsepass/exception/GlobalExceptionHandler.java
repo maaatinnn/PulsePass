@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-/** Único punto de traducción de excepciones a HTTP (PRD §14 y §15). */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -70,13 +69,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), Map.of());
     }
 
-    /** Login fallido (FR-SECAUTH-003): mensaje genérico, no revela si el usuario existe. */
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
         return build(HttpStatus.UNAUTHORIZED, "Credenciales inválidas", Map.of());
     }
 
-    /** Sin identidad válida (también lo invoca RestAuthenticationEntryPoint para errores del filtro). */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
         ResponseEntity<ErrorResponse> response =
@@ -86,10 +83,6 @@ public class GlobalExceptionHandler {
                 .body(response.getBody());
     }
 
-    /**
-     * Identidad válida sin permiso (también lo invoca RestAccessDeniedHandler). Sin este handler,
-     * un AccessDeniedException lanzado por @PreAuthorize caería en el catch-all y devolvería 500.
-     */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         return build(HttpStatus.FORBIDDEN, "No tiene permisos para realizar esta operación", Map.of());
@@ -105,7 +98,6 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type", Map.of());
     }
 
-    /** NFR-CTRL-007: nunca se exponen stack traces ni detalles internos. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
         log.error("Unexpected error", ex);

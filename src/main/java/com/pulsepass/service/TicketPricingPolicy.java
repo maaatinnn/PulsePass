@@ -9,18 +9,6 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Estrategia de precios encapsulada (PRD §28).
- *
- * <pre>
- * GENERAL   -> precio base
- * STUDENT   -> 50 % del precio base
- * VIP       -> 2.5 x precio base
- * BACKSTAGE -> 4 x precio base
- * </pre>
- *
- * El precio nunca lo envía el cliente. BR-TICKET-009: jamás se retorna un precio negativo.
- */
 @Component
 public class TicketPricingPolicy {
 

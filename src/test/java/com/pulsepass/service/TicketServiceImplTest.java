@@ -62,7 +62,6 @@ class TicketServiceImplTest {
                 new TicketPricingPolicy(new BigDecimal("100.00")), new TicketCodeGenerator(), clock);
     }
 
-    // ------------------------------------------------------------------ helpers
     private static User user(String username, String email, boolean active, LocalDate birthDate) {
         User user = new User(username, email);
         user.setActive(active);
@@ -112,20 +111,17 @@ class TicketServiceImplTest {
         verify(eventRepository, never()).save(any());
     }
 
-    // ------------------------------------------------------------------ purchase
     @Test
     void TEST_TICKET_001_purchase_validRequest_createsPaidTicketWithSystemPrice() {
-        // ARRANGE
+
         User andrea = user("andrea", "andrea@email.com", true, LocalDate.of(2001, 1, 1));
         Event event = event(EventStatus.PUBLISHED, 18, EVENT_DATE);
         givenUserAndEvent(andrea, event);
         givenPaidTickets(0);
         givenSaveReturnsArgument();
 
-        // ACT
         TicketResponse result = service.purchase(request("andrea@email.com", TicketType.VIP));
 
-        // ASSERT
         ArgumentCaptor<Ticket> captor = ArgumentCaptor.forClass(Ticket.class);
         verify(ticketRepository).save(captor.capture());
         Ticket saved = captor.getValue();
@@ -154,7 +150,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void TEST_TICKET_003_purchase_inactiveUser_throwsBusinessRule() { // AC-007
+    void TEST_TICKET_003_purchase_inactiveUser_throwsBusinessRule() {
         User miguel = user("miguel", "miguel@email.com", false, LocalDate.of(1996, 1, 1));
         when(userRepository.findByEmailIgnoreCase("miguel@email.com")).thenReturn(Optional.of(miguel));
 
@@ -203,7 +199,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void purchase_soldOutOrFinishedEvent_throwsBusinessRule() { // BR-TICKET-004
+    void purchase_soldOutOrFinishedEvent_throwsBusinessRule() {
         User andrea = user("andrea", "andrea@email.com", true, LocalDate.of(2001, 1, 1));
         when(userRepository.findByEmailIgnoreCase("andrea@email.com")).thenReturn(Optional.of(andrea));
 
@@ -218,7 +214,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void purchase_eventAlreadyHappened_throwsBusinessRule() { // BR-TICKET-005
+    void purchase_eventAlreadyHappened_throwsBusinessRule() {
         User andrea = user("andrea", "andrea@email.com", true, LocalDate.of(2001, 1, 1));
         givenUserAndEvent(andrea, event(EventStatus.PUBLISHED, 18, NOW.minusDays(1)));
 
@@ -230,8 +226,8 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void TEST_TICKET_006_purchase_underageUser_throwsBusinessRule() { // AC-006
-        User laura = user("laura", "laura@email.com", true, LocalDate.of(2009, 6, 15)); // 17 en el evento
+    void TEST_TICKET_006_purchase_underageUser_throwsBusinessRule() {
+        User laura = user("laura", "laura@email.com", true, LocalDate.of(2009, 6, 15));
         givenUserAndEvent(laura, event(EventStatus.PUBLISHED, 18, EVENT_DATE));
 
         assertThatThrownBy(() -> service.purchase(request("laura@email.com", TicketType.GENERAL)))
@@ -242,8 +238,8 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void purchase_ageIsEvaluatedOnEventDate_notOnPurchaseDate() { // BR-TICKET-006
-        // Hoy (2026-10-11) tiene 17, pero cumple 18 el 2026-11-01, antes del evento (2026-12-05).
+    void purchase_ageIsEvaluatedOnEventDate_notOnPurchaseDate() {
+
         User almostAdult = user("ana", "ana@email.com", true, LocalDate.of(2008, 11, 1));
         givenUserAndEvent(almostAdult, event(EventStatus.PUBLISHED, 18, EVENT_DATE));
         givenPaidTickets(0);
@@ -286,7 +282,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void TEST_TICKET_007_purchase_noCapacityLeft_throwsBusinessRule() { // AC-009
+    void TEST_TICKET_007_purchase_noCapacityLeft_throwsBusinessRule() {
         User andrea = user("andrea", "andrea@email.com", true, LocalDate.of(2001, 1, 1));
         Event event = event(EventStatus.PUBLISHED, 18, EVENT_DATE);
         givenUserAndEvent(andrea, event);
@@ -300,7 +296,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void TEST_TICKET_008_purchase_lastTicket_savesTicketAndMarksEventSoldOut() { // AC-008
+    void TEST_TICKET_008_purchase_lastTicket_savesTicketAndMarksEventSoldOut() {
         User carlos = user("carlos", "carlos@email.com", true, LocalDate.of(2005, 3, 1));
         Event event = event(EventStatus.PUBLISHED, 18, EVENT_DATE);
         givenUserAndEvent(carlos, event);
@@ -351,14 +347,13 @@ class TicketServiceImplTest {
                 .isInstanceOf(IllegalStateException.class);
     }
 
-    // ------------------------------------------------------------------ escenario de aceptación
     @Test
     void acceptanceScenario_cmf2026_andreaCarlosLauraMiguelAndSoldOut() {
         Event event = event(EventStatus.PUBLISHED, 18, EVENT_DATE);
-        User andrea = user("andrea", "andrea@email.com", true, LocalDate.of(2001, 1, 1));   // 25
-        User carlos = user("carlos", "carlos@email.com", true, LocalDate.of(2005, 3, 1));   // 21
-        User laura = user("laura", "laura@email.com", true, LocalDate.of(2009, 6, 15));     // 17
-        User miguel = user("miguel", "miguel@email.com", false, LocalDate.of(1996, 1, 1));  // inactivo
+        User andrea = user("andrea", "andrea@email.com", true, LocalDate.of(2001, 1, 1));
+        User carlos = user("carlos", "carlos@email.com", true, LocalDate.of(2005, 3, 1));
+        User laura = user("laura", "laura@email.com", true, LocalDate.of(2009, 6, 15));
+        User miguel = user("miguel", "miguel@email.com", false, LocalDate.of(1996, 1, 1));
         User adult = user("diana", "diana@email.com", true, LocalDate.of(1990, 5, 5));
         for (User u : List.of(andrea, carlos, laura, miguel, adult)) {
             when(userRepository.findByEmailIgnoreCase(u.getEmail())).thenReturn(Optional.of(u));
@@ -368,22 +363,21 @@ class TicketServiceImplTest {
                 .thenReturn(0L, 1L, 2L, 3L);
         givenSaveReturnsArgument();
 
-        service.purchase(request("andrea@email.com", TicketType.VIP));                       // AC-004
-        service.purchase(request("carlos@email.com", TicketType.GENERAL));                   // AC-005
+        service.purchase(request("andrea@email.com", TicketType.VIP));
+        service.purchase(request("carlos@email.com", TicketType.GENERAL));
         assertThatThrownBy(() -> service.purchase(request("laura@email.com", TicketType.GENERAL)))
-                .isInstanceOf(BusinessRuleException.class);                                  // AC-006
+                .isInstanceOf(BusinessRuleException.class);
         assertThatThrownBy(() -> service.purchase(request("miguel@email.com", TicketType.GENERAL)))
-                .isInstanceOf(BusinessRuleException.class);                                  // AC-007
+                .isInstanceOf(BusinessRuleException.class);
         assertThat(event.getStatus()).isEqualTo(EventStatus.PUBLISHED);
 
-        service.purchase(request("diana@email.com", TicketType.GENERAL));                    // AC-008
+        service.purchase(request("diana@email.com", TicketType.GENERAL));
         assertThat(event.getStatus()).isEqualTo(EventStatus.SOLD_OUT);
 
         assertThatThrownBy(() -> service.purchase(request("andrea@email.com", TicketType.GENERAL)))
-                .isInstanceOf(BusinessRuleException.class);                                  // AC-009
+                .isInstanceOf(BusinessRuleException.class);
     }
 
-    // ------------------------------------------------------------------ cancel
     @Test
     void TEST_TICKET_009_cancel_paidTicket_becomesCancelled() {
         Ticket ticket = ticket(TicketStatus.PAID, event(EventStatus.PUBLISHED, 0, EVENT_DATE));
@@ -398,7 +392,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void TEST_TICKET_010_cancel_usedTicket_throwsBusinessRule() { // AC-011
+    void TEST_TICKET_010_cancel_usedTicket_throwsBusinessRule() {
         Ticket ticket = ticket(TicketStatus.USED, event(EventStatus.PUBLISHED, 0, EVENT_DATE));
         when(ticketRepository.findByTicketCode("TKT-1")).thenReturn(Optional.of(ticket));
 
@@ -411,7 +405,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void cancel_alreadyCancelledTicket_throwsBusinessRule() { // BR-TICKET-011
+    void cancel_alreadyCancelledTicket_throwsBusinessRule() {
         Ticket ticket = ticket(TicketStatus.CANCELLED, event(EventStatus.PUBLISHED, 0, EVENT_DATE));
         when(ticketRepository.findByTicketCode("TKT-1")).thenReturn(Optional.of(ticket));
 
@@ -421,7 +415,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void cancel_afterEventDate_throwsBusinessRule() { // BR-TICKET-012
+    void cancel_afterEventDate_throwsBusinessRule() {
         Ticket ticket = ticket(TicketStatus.PAID, event(EventStatus.PUBLISHED, 0, NOW.minusHours(1)));
         when(ticketRepository.findByTicketCode("TKT-1")).thenReturn(Optional.of(ticket));
 
@@ -442,9 +436,8 @@ class TicketServiceImplTest {
                 .hasMessage("Ticket not found: NOPE");
     }
 
-    // ------------------------------------------------------------------ markAsUsed
     @Test
-    void TEST_TICKET_011_markAsUsed_paidTicket_becomesUsed() { // AC-010
+    void TEST_TICKET_011_markAsUsed_paidTicket_becomesUsed() {
         Ticket ticket = ticket(TicketStatus.PAID, event(EventStatus.PUBLISHED, 0, EVENT_DATE));
         when(ticketRepository.findByTicketCode("TKT-1")).thenReturn(Optional.of(ticket));
         when(ticketRepository.save(ticket)).thenReturn(ticket);
@@ -457,7 +450,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void TEST_TICKET_012_markAsUsed_cancelledTicket_throwsBusinessRule() { // BR-TICKET-014
+    void TEST_TICKET_012_markAsUsed_cancelledTicket_throwsBusinessRule() {
         Ticket ticket = ticket(TicketStatus.CANCELLED, event(EventStatus.PUBLISHED, 0, EVENT_DATE));
         when(ticketRepository.findByTicketCode("TKT-1")).thenReturn(Optional.of(ticket));
 
@@ -470,7 +463,7 @@ class TicketServiceImplTest {
     }
 
     @Test
-    void markAsUsed_alreadyUsedTicket_throwsBusinessRule() { // BR-TICKET-013
+    void markAsUsed_alreadyUsedTicket_throwsBusinessRule() {
         Ticket ticket = ticket(TicketStatus.USED, event(EventStatus.PUBLISHED, 0, EVENT_DATE));
         when(ticketRepository.findByTicketCode("TKT-1")).thenReturn(Optional.of(ticket));
 
@@ -489,7 +482,6 @@ class TicketServiceImplTest {
         verify(ticketRepository, never()).save(any());
     }
 
-    // ------------------------------------------------------------------ queries
     @Test
     void findByCode_existing_returnsDto() {
         Ticket ticket = ticket(TicketStatus.PAID, event(EventStatus.PUBLISHED, 0, EVENT_DATE));

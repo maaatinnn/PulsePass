@@ -8,7 +8,6 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
-/** 403 para identidad válida sin permiso. Mismo mecanismo que RestAuthenticationEntryPoint. */
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 

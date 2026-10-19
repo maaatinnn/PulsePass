@@ -57,21 +57,19 @@ class UserServiceImplTest {
 
     @Test
     void TEST_USER_001_register_validUser_createsActiveUserWithProfile() {
-        // ARRANGE
+
         when(userRepository.existsByUsername("andrea")).thenReturn(false);
         when(userRepository.existsByEmailIgnoreCase("andrea@email.com")).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
         UserResponse expected = response();
         when(userMapper.toResponse(any(User.class))).thenReturn(expected);
 
-        // ACT
         UserResponse result = service.register(request(LocalDate.of(2001, 1, 1)));
 
-        // ASSERT
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture()); // una sola llamada: User + UserProfile (BR-USER-004)
+        verify(userRepository).save(captor.capture());
         User saved = captor.getValue();
-        assertThat(saved.isActive()).isTrue(); // BR-USER-003
+        assertThat(saved.isActive()).isTrue();
         assertThat(saved.getUsername()).isEqualTo("andrea");
         assertThat(saved.getProfile()).isNotNull();
         assertThat(saved.getProfile().getUser()).isSameAs(saved);

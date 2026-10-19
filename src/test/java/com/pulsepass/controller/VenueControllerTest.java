@@ -22,8 +22,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(VenueController.class)
-// Fase 4: estos tests verifican comportamiento funcional, no seguridad; por eso corren con una identidad
-// que cumple cualquier regla de rol. Las restricciones por rol se prueban en SecurityRulesTest.
+
 @Import(SecurityTestConfig.class)
 @WithMockUser(roles = {"USER", "STAFF", "ADMIN"})
 class VenueControllerTest {

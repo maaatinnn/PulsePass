@@ -59,7 +59,6 @@ class EventServiceImplTest {
                 eventMapper, clock, authorizationService);
     }
 
-    // ---------- helpers
     private static Venue venue(boolean active) {
         Venue venue = new Venue("VEN-SMR-01", "Marina Convention Center", "Santa Marta", "Calle 1", 3);
         venue.setActive(active);
@@ -81,19 +80,16 @@ class EventServiceImplTest {
                 "Marina Convention Center", List.of());
     }
 
-    // ---------- findByCode
     @Test
     void TEST_EVENT_001_findByCode_existingEvent_returnsDto() {
-        // ARRANGE
+
         Event event = event(EventStatus.PUBLISHED, EVENT_DATE, venue(true));
         EventResponse expected = response(EventStatus.PUBLISHED);
         when(eventRepository.findByEventCode("CMF-2026")).thenReturn(Optional.of(event));
         when(eventMapper.toResponse(event)).thenReturn(expected);
 
-        // ACT
         EventResponse result = service.findByCode("CMF-2026");
 
-        // ASSERT
         assertThat(result).isEqualTo(expected);
         verify(eventRepository).findByEventCode("CMF-2026");
     }
@@ -107,10 +103,9 @@ class EventServiceImplTest {
                 .hasMessage("Event not found: NOPE");
     }
 
-    // ---------- create
     @Test
     void TEST_EVENT_003_create_validRequest_savesEventInDraft() {
-        // ARRANGE
+
         Venue venue = venue(true);
         when(eventRepository.existsByEventCode("CMF-2026")).thenReturn(false);
         when(venueRepository.findByCode("VEN-SMR-01")).thenReturn(Optional.of(venue));
@@ -118,14 +113,12 @@ class EventServiceImplTest {
         EventResponse expected = response(EventStatus.DRAFT);
         when(eventMapper.toResponse(any(Event.class))).thenReturn(expected);
 
-        // ACT
         EventResponse result = service.create(request(EVENT_DATE, 18));
 
-        // ASSERT
         ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
         verify(eventRepository).save(captor.capture());
         Event saved = captor.getValue();
-        assertThat(saved.getStatus()).isEqualTo(EventStatus.DRAFT); // BR-EVENT-005 / AC-001
+        assertThat(saved.getStatus()).isEqualTo(EventStatus.DRAFT);
         assertThat(saved.getEventCode()).isEqualTo("CMF-2026");
         assertThat(saved.getMinimumAge()).isEqualTo(18);
         assertThat(saved.getVenue()).isSameAs(venue);
@@ -147,7 +140,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void create_duplicateEventCode_throwsDuplicateResource() { // BR-EVENT-001
+    void create_duplicateEventCode_throwsDuplicateResource() {
         when(eventRepository.existsByEventCode("CMF-2026")).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(request(EVENT_DATE, 18)))
@@ -194,7 +187,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void create_negativeMinimumAge_throwsBusinessRule() { // BR-EVENT-006
+    void create_negativeMinimumAge_throwsBusinessRule() {
         when(eventRepository.existsByEventCode("CMF-2026")).thenReturn(false);
         when(venueRepository.findByCode("VEN-SMR-01")).thenReturn(Optional.of(venue(true)));
 
@@ -217,7 +210,6 @@ class EventServiceImplTest {
         verify(eventRepository, never()).save(any());
     }
 
-    // ---------- publish
     @Test
     void TEST_EVENT_007_publish_validDraft_becomesPublished() {
         Event event = event(EventStatus.DRAFT, EVENT_DATE, venue(true));
@@ -246,7 +238,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void publish_alreadyPublishedSoldOutOrFinished_throwsBusinessRule() { // BR-EVENT-007
+    void publish_alreadyPublishedSoldOutOrFinished_throwsBusinessRule() {
         for (EventStatus status : List.of(EventStatus.PUBLISHED, EventStatus.SOLD_OUT, EventStatus.FINISHED)) {
             Event event = event(status, EVENT_DATE, venue(true));
             when(eventRepository.findByEventCode("CMF-2026")).thenReturn(Optional.of(event));
@@ -258,7 +250,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void publish_eventDateInThePast_throwsBusinessRule() { // BR-EVENT-008
+    void publish_eventDateInThePast_throwsBusinessRule() {
         Event event = event(EventStatus.DRAFT, NOW.minusHours(1), venue(true));
         when(eventRepository.findByEventCode("CMF-2026")).thenReturn(Optional.of(event));
 
@@ -270,7 +262,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void publish_inactiveVenue_throwsBusinessRule() { // BR-EVENT-009
+    void publish_inactiveVenue_throwsBusinessRule() {
         Event event = event(EventStatus.DRAFT, EVENT_DATE, venue(false));
         when(eventRepository.findByEventCode("CMF-2026")).thenReturn(Optional.of(event));
 
@@ -291,7 +283,6 @@ class EventServiceImplTest {
         verify(eventRepository, never()).save(any());
     }
 
-    // ---------- addArtist
     @Test
     void addArtist_validArtist_associatesAndSaves() {
         Event event = event(EventStatus.DRAFT, EVENT_DATE, venue(true));
@@ -308,7 +299,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void addArtist_allThreeScenarioArtists_canBeAssociated() { // AC-003
+    void addArtist_allThreeScenarioArtists_canBeAssociated() {
         Event event = event(EventStatus.PUBLISHED, EVENT_DATE, venue(true));
         when(eventRepository.findByEventCode("CMF-2026")).thenReturn(Optional.of(event));
         when(eventRepository.save(event)).thenReturn(event);
@@ -328,7 +319,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void addArtist_sameArtistTwice_throwsDuplicateAndDoesNotPersist() { // BR-EVENT-010
+    void addArtist_sameArtistTwice_throwsDuplicateAndDoesNotPersist() {
         Event event = event(EventStatus.DRAFT, EVENT_DATE, venue(true));
         Artist artist = new Artist("Solar Beat", "CO", "Pop");
         event.addArtist(artist);
@@ -343,7 +334,7 @@ class EventServiceImplTest {
     }
 
     @Test
-    void addArtist_cancelledOrFinishedEvent_throwsBusinessRule() { // BR-EVENT-011
+    void addArtist_cancelledOrFinishedEvent_throwsBusinessRule() {
         Artist artist = new Artist("Solar Beat", "CO", "Pop");
         when(artistRepository.findById(1L)).thenReturn(Optional.of(artist));
 
@@ -382,7 +373,6 @@ class EventServiceImplTest {
         verify(eventRepository, never()).save(any());
     }
 
-    // ---------- listings
     @Test
     void findPublishedEvents_mapsEveryPublishedEvent() {
         Event event = event(EventStatus.PUBLISHED, EVENT_DATE, venue(true));

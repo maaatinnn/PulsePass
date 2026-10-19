@@ -4,7 +4,6 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/** identifier = username o email. En login no se aplica la política de longitud mínima (solo un tope). */
 public record LoginRequest(
         @NotBlank(message = "Identifier is required")
         @Size(max = 150, message = "Identifier must have at most 150 characters")

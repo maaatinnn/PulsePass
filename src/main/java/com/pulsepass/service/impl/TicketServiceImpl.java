@@ -57,10 +57,6 @@ public class TicketServiceImpl implements TicketService {
         this.clock = clock;
     }
 
-    /**
-     * Compra atómica (PRD §24, §39): cualquier excepción provoca ROLLBACK, de modo que
-     * el ticket y el cambio a SOLD_OUT se confirman juntos o no se confirman.
-     */
     @Override
     @Transactional
     public TicketResponse purchase(PurchaseTicketRequest request) {
@@ -69,7 +65,6 @@ public class TicketServiceImpl implements TicketService {
         requireText(request.eventCode(), "eventCode");
         requireNonNull(request.type(), "type");
 
-        // BR-TICKET-001 / BR-TICKET-002
         User user = userRepository.findByEmailIgnoreCase(request.userEmail())
                 .orElseThrow(() -> ResourceNotFoundException.of("User", request.userEmail()));
         if (!user.isActive()) {
@@ -77,23 +72,20 @@ public class TicketServiceImpl implements TicketService {
                     + user.getEmail());
         }
 
-        // BR-TICKET-003
         Event event = eventRepository.findByEventCode(request.eventCode())
                 .orElseThrow(() -> ResourceNotFoundException.of("Event", request.eventCode()));
 
-        // BR-TICKET-004
         if (event.getStatus() != EventStatus.PUBLISHED) {
             throw new BusinessRuleException("Tickets can only be purchased for PUBLISHED events. Event "
                     + event.getEventCode() + " is " + event.getStatus() + ".");
         }
-        // BR-TICKET-005
+
         if (!event.getEventDate().isAfter(now())) {
             throw new BusinessRuleException("Event " + event.getEventCode() + " has already taken place.");
         }
-        // BR-TICKET-006
+
         validateMinimumAge(user, event);
 
-        // BR-TICKET-007
         int capacity = event.getVenue().getCapacity();
         long paidTickets = ticketRepository
                 .countByEventEventCodeAndStatus(event.getEventCode(), TicketStatus.PAID);
@@ -102,14 +94,12 @@ public class TicketServiceImpl implements TicketService {
                     + " has no capacity left (" + capacity + ").");
         }
 
-        // BR-TICKET-009: el precio lo calcula el sistema.
         BigDecimal price = pricingPolicy.priceFor(request.type());
 
         Ticket ticket = new Ticket(codeGenerator.generate(), request.type(), price,
                 TicketStatus.PAID, now(), user, event);
         Ticket saved = ticketRepository.save(ticket);
 
-        // BR-TICKET-008: misma transacción que el guardado del ticket.
         if (paidTickets + 1 == capacity) {
             event.setStatus(EventStatus.SOLD_OUT);
             eventRepository.save(event);
@@ -150,12 +140,11 @@ public class TicketServiceImpl implements TicketService {
     public TicketResponse cancel(String ticketCode) {
         Ticket ticket = getTicket(ticketCode);
 
-        // BR-TICKET-010 / BR-TICKET-011
         if (ticket.getStatus() != TicketStatus.PAID) {
             throw new BusinessRuleException("Only PAID tickets can be cancelled. Ticket "
                     + ticketCode + " is " + ticket.getStatus() + ".");
         }
-        // BR-TICKET-012
+
         if (!ticket.getEvent().getEventDate().isAfter(now())) {
             throw new BusinessRuleException("Ticket " + ticketCode
                     + " cannot be cancelled after the event date.");
@@ -170,11 +159,10 @@ public class TicketServiceImpl implements TicketService {
     public TicketResponse markAsUsed(String ticketCode) {
         Ticket ticket = getTicket(ticketCode);
 
-        // BR-TICKET-014
         if (ticket.getStatus() == TicketStatus.CANCELLED) {
             throw new BusinessRuleException("Ticket " + ticketCode + " is CANCELLED and cannot be used.");
         }
-        // BR-TICKET-013
+
         if (ticket.getStatus() != TicketStatus.PAID) {
             throw new BusinessRuleException("Only PAID tickets can be marked as used. Ticket "
                     + ticketCode + " is " + ticket.getStatus() + ".");
@@ -184,7 +172,6 @@ public class TicketServiceImpl implements TicketService {
         return ticketMapper.toResponse(ticketRepository.save(ticket));
     }
 
-    /** La edad se evalúa en la fecha del evento, no en la fecha de compra. */
     private void validateMinimumAge(User user, Event event) {
         int minimumAge = event.getMinimumAge() == null ? 0 : event.getMinimumAge();
         if (minimumAge <= 0) {

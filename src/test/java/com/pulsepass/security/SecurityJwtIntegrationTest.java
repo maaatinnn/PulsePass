@@ -64,13 +64,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * Pruebas de integración de seguridad que utilizan tokens JWT reales firmados y cubren:
- * - Login y endpoint /api/auth/me
- * - Tokens JWT válidos, inválidos (firma alterada, issuer erróneo, malformados) y expirados
- * - Verificación de roles incorrectos (403)
- * - Anti-IDOR y comprobaciones de propiedad de recursos (entradas y datos de usuario)
- */
 @WebMvcTest(controllers = {
         AuthController.class, UserController.class, EventController.class,
         TicketController.class, VenueController.class, ArtistController.class
@@ -151,8 +144,6 @@ class SecurityJwtIntegrationTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(userCarlos));
     }
 
-    // ---------- 1. Login y GET /api/auth/me ----------
-
     @Test
     void login_validCredentials_returnsJwtToken() throws Exception {
         LoginRequest loginReq = new LoginRequest("andrea", "UnaFraseSeguraLarga2026!");
@@ -199,8 +190,6 @@ class SecurityJwtIntegrationTest {
                 .andExpect(jsonPath("$.email").value("andrea@email.com"))
                 .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
     }
-
-    // ---------- 2. Tokens JWT válidos, inválidos y expirados ----------
 
     @Test
     void protectedEndpoint_validJwt_allowsAccess() throws Exception {
@@ -282,11 +271,9 @@ class SecurityJwtIntegrationTest {
                 .andExpect(jsonPath("$.status").value(401));
     }
 
-    // ---------- 3. Roles incorrectos ----------
-
     @Test
     void userRole_attemptsCreateEvent_returns403() throws Exception {
-        String token = jwtService.generateAccessToken(1L); // Andrea is ROLE_USER
+        String token = jwtService.generateAccessToken(1L);
 
         mockMvc.perform(post("/api/events")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -304,7 +291,7 @@ class SecurityJwtIntegrationTest {
 
     @Test
     void userRole_attemptsMarkTicketUsed_returns403() throws Exception {
-        String token = jwtService.generateAccessToken(1L); // ROLE_USER
+        String token = jwtService.generateAccessToken(1L);
 
         mockMvc.perform(patch("/api/tickets/TKT-100/use")
                         .header("Authorization", "Bearer " + token))
@@ -314,7 +301,7 @@ class SecurityJwtIntegrationTest {
 
     @Test
     void staffRole_canAccessStaffEndpoint_returns200() throws Exception {
-        String staffToken = jwtService.generateAccessToken(3L); // Laura is ROLE_STAFF
+        String staffToken = jwtService.generateAccessToken(3L);
         TicketResponse resp = new TicketResponse(
                 1L, "TKT-100", TicketType.GENERAL, BigDecimal.valueOf(100.0), TicketStatus.USED,
                 LocalDateTime.now(), "andrea@email.com", "CMF-2026", "Caribbean Music Fest");
@@ -328,7 +315,7 @@ class SecurityJwtIntegrationTest {
 
     @Test
     void adminRole_canPublishEvent_returns200() throws Exception {
-        String adminToken = jwtService.generateAccessToken(4L); // Admin is ROLE_ADMIN
+        String adminToken = jwtService.generateAccessToken(4L);
         EventResponse resp = new EventResponse(
                 1L, "CMF-2026", "Caribbean Music Fest", null, EventCategory.MUSIC,
                 EventStatus.PUBLISHED, LocalDateTime.now().plusDays(10), 18, "VEN-SMR-01", "Center", List.of());
@@ -340,11 +327,9 @@ class SecurityJwtIntegrationTest {
                 .andExpect(jsonPath("$.status").value("PUBLISHED"));
     }
 
-    // ---------- 4. Propiedad de recursos (Anti-IDOR) ----------
-
     @Test
     void purchaseTicket_ownEmail_allows() throws Exception {
-        String token = jwtService.generateAccessToken(1L); // Andrea
+        String token = jwtService.generateAccessToken(1L);
         TicketResponse ticketResp = new TicketResponse(
                 1L, "TKT-101", TicketType.GENERAL, BigDecimal.valueOf(100.0), TicketStatus.PAID,
                 LocalDateTime.now(), "andrea@email.com", "CMF-2026", "Caribbean Music Fest");
@@ -366,7 +351,7 @@ class SecurityJwtIntegrationTest {
 
     @Test
     void purchaseTicket_otherUserEmail_returns403() throws Exception {
-        String token = jwtService.generateAccessToken(1L); // Andrea
+        String token = jwtService.generateAccessToken(1L);
 
         mockMvc.perform(post("/api/tickets")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -385,7 +370,7 @@ class SecurityJwtIntegrationTest {
 
     @Test
     void viewTicket_owner_allows() throws Exception {
-        String token = jwtService.generateAccessToken(1L); // Andrea
+        String token = jwtService.generateAccessToken(1L);
         Ticket ticket = mock(Ticket.class);
         when(ticket.getUser()).thenReturn(userAndrea);
         when(ticketRepository.findByTicketCode("TKT-ANDREA")).thenReturn(Optional.of(ticket));
@@ -401,9 +386,9 @@ class SecurityJwtIntegrationTest {
 
     @Test
     void viewTicket_otherUserTicket_returns403() throws Exception {
-        String token = jwtService.generateAccessToken(1L); // Andrea
+        String token = jwtService.generateAccessToken(1L);
         Ticket ticket = mock(Ticket.class);
-        when(ticket.getUser()).thenReturn(userCarlos); // Ticket owned by Carlos
+        when(ticket.getUser()).thenReturn(userCarlos);
         when(ticketRepository.findByTicketCode("TKT-CARLOS")).thenReturn(Optional.of(ticket));
 
         mockMvc.perform(get("/api/tickets/TKT-CARLOS")
@@ -414,9 +399,9 @@ class SecurityJwtIntegrationTest {
 
     @Test
     void cancelTicket_otherUserTicket_returns403() throws Exception {
-        String token = jwtService.generateAccessToken(1L); // Andrea
+        String token = jwtService.generateAccessToken(1L);
         Ticket ticket = mock(Ticket.class);
-        when(ticket.getUser()).thenReturn(userCarlos); // Owned by Carlos
+        when(ticket.getUser()).thenReturn(userCarlos);
         when(ticketRepository.findByTicketCode("TKT-CARLOS")).thenReturn(Optional.of(ticket));
 
         mockMvc.perform(patch("/api/tickets/TKT-CARLOS/cancel")
@@ -427,7 +412,7 @@ class SecurityJwtIntegrationTest {
 
     @Test
     void userLookup_otherUserEmail_returns403() throws Exception {
-        String token = jwtService.generateAccessToken(1L); // Andrea
+        String token = jwtService.generateAccessToken(1L);
 
         mockMvc.perform(get("/api/users/by-email")
                         .param("email", "carlos@email.com")
@@ -438,7 +423,7 @@ class SecurityJwtIntegrationTest {
 
     @Test
     void userLookup_otherUserUsername_returns403() throws Exception {
-        String token = jwtService.generateAccessToken(1L); // Andrea
+        String token = jwtService.generateAccessToken(1L);
 
         mockMvc.perform(get("/api/users/by-username")
                         .param("username", "carlos")

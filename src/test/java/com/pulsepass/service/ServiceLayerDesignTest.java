@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Verifica por reflexión los principios SRV-001..SRV-004 sin levantar Spring. */
 class ServiceLayerDesignTest {
 
     private static final List<Class<?>> INTERFACES = List.of(

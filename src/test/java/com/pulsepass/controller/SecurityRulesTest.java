@@ -33,13 +33,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * Reglas de la filter chain REAL (PRD §17.2, T-SEC-001..004, 012, 013). Los Services están mockeados:
- * lo que se verifica es que un request denegado NUNCA llega al negocio.
- *
- * <p>Mitad 1: sin filtro JWT, la identidad se simula con @WithMockUser. Las pruebas con token real
- * llegan con la etapa 5/6.
- */
 @WebMvcTest(controllers = {VenueController.class, EventController.class, ArtistController.class,
         UserController.class, TicketController.class, AuthController.class})
 @Import(SecurityTestConfig.class)
@@ -59,8 +52,6 @@ class SecurityRulesTest {
     @MockitoBean private UserService userService;
     @MockitoBean private TicketService ticketService;
     @MockitoBean private AuthService authService;
-
-    // ---------- públicas ----------
 
     @Test
     void T_SEC_001_anonymous_canReadPublishedEvents() throws Exception {
@@ -84,8 +75,6 @@ class SecurityRulesTest {
         mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
     }
-
-    // ---------- 401: sin identidad ----------
 
     @Test
     void T_SEC_002_anonymous_postEvents_returns401ErrorResponse_andDoesNotCallService() throws Exception {
@@ -126,8 +115,6 @@ class SecurityRulesTest {
     void unknownRoutesAreDeniedByDefault() throws Exception {
         mockMvc.perform(get("/api/ruta-que-no-existe")).andExpect(status().isUnauthorized());
     }
-
-    // ---------- 403: identidad válida sin rol ----------
 
     @Test
     @WithMockUser(roles = "USER")
@@ -170,8 +157,6 @@ class SecurityRulesTest {
 
         verifyNoInteractions(ticketService);
     }
-
-    // ---------- 2xx: rol correcto ----------
 
     @Test
     @WithMockUser(roles = "ADMIN")

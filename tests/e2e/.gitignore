@@ -1,0 +1,10 @@
+# Nunca versionar secretos ni evidencias con datos sensibles
+*.token
+*.secret
+.env
+*.env
+# Exportaciones de ambientes de Postman con valores reales
+*.postman_environment.local.json
+evidencia/
+capturas/
+__pycache__/

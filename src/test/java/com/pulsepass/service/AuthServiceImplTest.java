@@ -86,8 +86,6 @@ class AuthServiceImplTest {
         return user;
     }
 
-    // ---------- register ----------
-
     @Test
     void TEST_SEC_AUTH_001_register_createsBcryptCredentialAndOnlyRoleUser() {
         RegisterUserRequest request = registerRequest(PASSWORD);
@@ -131,8 +129,6 @@ class AuthServiceImplTest {
         verifyNoInteractions(userService, credentialRepository, roleRepository);
     }
 
-    // ---------- login ----------
-
     @Test
     void TEST_SEC_AUTH_002_login_validCredentials_returnsBearerTokenWithTtl() {
         SecurityPrincipal principal = new SecurityPrincipal(5L, "andrea", null,
@@ -151,7 +147,7 @@ class AuthServiceImplTest {
 
         ArgumentCaptor<Authentication> sent = ArgumentCaptor.forClass(Authentication.class);
         verify(authenticationManager).authenticate(sent.capture());
-        assertThat(sent.getValue().getName()).isEqualTo("andrea"); // identificador sin espacios
+        assertThat(sent.getValue().getName()).isEqualTo("andrea");
         assertThat(sent.getValue().isAuthenticated()).isFalse();
     }
 
@@ -174,7 +170,7 @@ class AuthServiceImplTest {
 
         assertThatThrownBy(() -> service.login(new LoginRequest("carlos", PASSWORD)))
                 .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessage("Invalid credentials"); // mismo mensaje: no revela que la cuenta existe
+                .hasMessage("Invalid credentials");
 
         verify(jwtService, never()).generateAccessToken(any());
     }

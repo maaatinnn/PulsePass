@@ -2,7 +2,6 @@ package com.pulsepass.service.impl;
 
 import com.pulsepass.exception.BusinessRuleException;
 
-/** Validaciones de entrada compartidas por los servicios. */
 final class Validations {
 
     private Validations() {

@@ -19,13 +19,6 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
-/**
- * Declara autenticación y reglas de rutas. No contiene negocio (PRD 7.1).
- *
- * <p>ESTADO (mitad 1 de la Fase 4): el filtro Bearer (JwtAuthenticationFilter) todavía no existe, así
- * que ningún request puede autenticarse con token. Las rutas protegidas responden 401 (denegar por
- * defecto, SEC001). El filtro se registra en la etapa 5.
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -55,7 +48,7 @@ public class SecurityConfig {
                                             AuthenticationEntryPoint authEntryPoint,
                                             AccessDeniedHandler deniedHandler) throws Exception {
         http
-                // Solo válido porque la API es Bearer sin cookies de autenticación (PRD 14.3, advertencia 6).
+
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -63,7 +56,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authEntryPoint)
                         .accessDeniedHandler(deniedHandler))
-                // El orden importa: reglas específicas primero, anyRequest() al final.
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/*/tickets/paid").hasAnyRole("STAFF", "ADMIN")

@@ -3,7 +3,6 @@ package com.pulsepass.security;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/** Configuración JWT (PRD 14.2). El secreto llega por variable de entorno, nunca del código fuente. */
 @ConfigurationProperties(prefix = "pulsepass.security.jwt")
 public record JwtProperties(String issuer, String secretBase64, Duration accessTokenTtl) {
 
@@ -16,7 +15,6 @@ public record JwtProperties(String issuer, String secretBase64, Duration accessT
         }
     }
 
-    /** NFR-SEC001: el secreto no debe salir en logs aunque alguien imprima el objeto. */
     @Override
     public String toString() {
         return "JwtProperties[issuer=" + issuer + ", secretBase64=***, accessTokenTtl=" + accessTokenTtl + "]";

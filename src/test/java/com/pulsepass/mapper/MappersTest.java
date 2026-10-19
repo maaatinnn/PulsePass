@@ -22,7 +22,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
-/** Los mappers generados por MapStruct se instancian a mano: sin Spring. */
 class MappersTest {
 
     private final ArtistMapper artistMapper = new ArtistMapperImpl();
