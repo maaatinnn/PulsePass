@@ -44,7 +44,6 @@ class JwtServiceTest {
         Long userId = 12345L;
         String token = jwtService.generateAccessToken(userId);
 
-        // Avanzar el reloj 20 minutos (expiración es 15m)
         Clock futureClock = Clock.fixed(Instant.parse("2026-10-10T12:20:00Z"), ZoneId.of("UTC"));
         JwtService validationService = new JwtService(properties, futureClock);
 

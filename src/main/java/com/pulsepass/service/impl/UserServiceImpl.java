@@ -31,7 +31,6 @@ public class UserServiceImpl implements UserService {
         this.clock = clock;
     }
 
-    /** BR-USER-004: User y UserProfile se crean en la misma transacción (cascade ALL). */
     @Override
     @Transactional
     public UserResponse register(RegisterUserRequest request) {
@@ -41,21 +40,20 @@ public class UserServiceImpl implements UserService {
         requireText(request.firstName(), "firstName");
         requireText(request.lastName(), "lastName");
 
-        // BR-USER-005
         if (request.birthDate() != null && request.birthDate().isAfter(LocalDate.now(clock))) {
             throw new BusinessRuleException("Birth date cannot be in the future: " + request.birthDate());
         }
-        // BR-USER-001
+
         if (userRepository.existsByUsername(request.username())) {
             throw new DuplicateResourceException("Username already exists: " + request.username());
         }
-        // BR-USER-002 (sin distinguir mayúsculas/minúsculas)
+
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new DuplicateResourceException("Email already exists: " + request.email());
         }
 
         User user = new User(request.username().trim(), request.email().trim());
-        user.setActive(true); // BR-USER-003
+        user.setActive(true);
 
         UserProfile profile = new UserProfile(request.firstName(), request.lastName());
         profile.setPhone(request.phone());

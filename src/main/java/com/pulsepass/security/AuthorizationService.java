@@ -15,9 +15,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Servicio de autorización y verificación de propiedad (anti-IDOR) y visibilidad (PRD 3.2, 11.1).
- */
 @Service
 public class AuthorizationService {
 
@@ -33,7 +30,6 @@ public class AuthorizationService {
         this.eventRepository = eventRepository;
     }
 
-    /** Obtiene el SecurityPrincipal actual o lanza AccessDeniedException (403/401). */
     public SecurityPrincipal getCurrentPrincipal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof SecurityPrincipal principal)) {
@@ -42,7 +38,6 @@ public class AuthorizationService {
         return principal;
     }
 
-    /** Comprueba si el usuario autenticado posee un rol dado ("ADMIN", "STAFF", "USER"). */
     public boolean hasRole(String roleName) {
         SecurityPrincipal principal = getCurrentPrincipal();
         String expectedAuthority = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
@@ -50,10 +45,6 @@ public class AuthorizationService {
                 .anyMatch(a -> a.getAuthority().equals(expectedAuthority));
     }
 
-    /**
-     * Valida que en la compra de ticket (POST /api/tickets), si el usuario tiene rol USER,
-     * el userEmail enviado en el DTO coincida exactamente con el email de su cuenta persistida (anti-IDOR).
-     */
     @Transactional(readOnly = true)
     public void validateTicketPurchaseOwnership(String userEmailInDto) {
         SecurityPrincipal principal = getCurrentPrincipal();
@@ -65,10 +56,6 @@ public class AuthorizationService {
         }
     }
 
-    /**
-     * Valida propiedad para la consulta de ticket por código (GET /api/tickets/{ticketCode}).
-     * STAFF y ADMIN tienen acceso. El rol USER sólo puede consultar sus propios tickets.
-     */
     @Transactional(readOnly = true)
     public void validateTicketOwnership(String ticketCode) {
         SecurityPrincipal principal = getCurrentPrincipal();
@@ -83,10 +70,6 @@ public class AuthorizationService {
         }
     }
 
-    /**
-     * Valida propiedad para la cancelación de ticket (PATCH /api/tickets/{ticketCode}/cancel).
-     * ADMIN puede cancelar. USER solo puede cancelar su propia entrada.
-     */
     @Transactional(readOnly = true)
     public void validateTicketCancelOwnership(String ticketCode) {
         SecurityPrincipal principal = getCurrentPrincipal();
@@ -101,10 +84,6 @@ public class AuthorizationService {
         }
     }
 
-    /**
-     * Valida que la consulta de tickets por usuario (GET /api/tickets/by-user?email=) o datos de usuario
-     * sea realizada por el propio usuario o por un ADMIN.
-     */
     @Transactional(readOnly = true)
     public void validateUserResourceAccessByEmail(String email) {
         SecurityPrincipal principal = getCurrentPrincipal();
@@ -119,9 +98,6 @@ public class AuthorizationService {
         }
     }
 
-    /**
-     * Valida la consulta de usuario por username (GET /api/users/by-username?username=).
-     */
     @Transactional(readOnly = true)
     public void validateUserResourceAccessByUsername(String username) {
         SecurityPrincipal principal = getCurrentPrincipal();
@@ -136,9 +112,6 @@ public class AuthorizationService {
         }
     }
 
-    /**
-     * Retorna true si el principal actual posee rol STAFF o ADMIN, permitiéndole ver eventos no publicados.
-     */
     public boolean canViewNonPublishedEvents() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof SecurityPrincipal principal)) {
@@ -148,10 +121,6 @@ public class AuthorizationService {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_STAFF"));
     }
 
-    /**
-     * Verifica la visibilidad de un evento (GET /api/events/{eventCode}).
-     * Si no está PUBLISHED, sólo STAFF y ADMIN pueden consultarlo.
-     */
     @Transactional(readOnly = true)
     public void validateEventVisibility(String eventCode) {
         Event event = eventRepository.findByEventCode(eventCode)

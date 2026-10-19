@@ -17,7 +17,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-/** Valida V4 contra PostgreSQL real: credenciales 1:1, roles con PK compuesta y CHECK. */
 class SecurityPersistenceIT extends AbstractPostgresIT {
 
     private static final String PASSWORD = "UnaFraseSeguraLarga2026!";
@@ -77,8 +76,6 @@ class SecurityPersistenceIT extends AbstractPostgresIT {
 
         assertThat(columns).noneMatch(c -> c.contains("password"));
     }
-
-    // Las violaciones de restricciones van una por prueba: PostgreSQL aborta la transacción tras el primer error.
 
     @Test
     void duplicateRoleForTheSameUserIsRejected() {

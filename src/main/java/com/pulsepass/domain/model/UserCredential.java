@@ -4,10 +4,6 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Credencial de acceso (1:1 con User). Está separada de User a propósito: así ni los DTOs
- * de negocio ni MapStruct pueden serializar el hash por accidente (PRD 9.1).
- */
 @Entity
 @Table(name = "user_credentials")
 public class UserCredential {
@@ -55,7 +51,6 @@ public class UserCredential {
         return getClass().hashCode();
     }
 
-    /** NFR-SEC001: el hash nunca aparece en logs. */
     @Override
     public String toString() {
         return "UserCredential{userId=" + userId + "}";

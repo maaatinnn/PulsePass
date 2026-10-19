@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Verifica por reflexión CTRL-001..CTRL-004 (AC-CTRL015 y AC-CTRL016) sin levantar Spring. */
 class ControllerLayerDesignTest {
 
     private static final List<Class<?>> CONTROLLERS = List.of(

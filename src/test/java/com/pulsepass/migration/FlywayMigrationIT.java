@@ -66,7 +66,7 @@ class FlywayMigrationIT extends AbstractPostgresIT {
 
     @Test
     void v4GivesNoCredentialsToExistingUsers_neverInventsPasswords() {
-        // En una base vacía no hay legados, pero el INSERT de V4 no debe haber creado credenciales.
+
         Integer credentials = jdbc.queryForObject("SELECT COUNT(*) FROM user_credentials", Integer.class);
 
         assertThat(credentials).isZero();

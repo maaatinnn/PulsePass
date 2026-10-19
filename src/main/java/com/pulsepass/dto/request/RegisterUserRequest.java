@@ -39,13 +39,11 @@ public record RegisterUserRequest(
         String password
 ) {
 
-    /** BCrypt solo usa los primeros 72 BYTES: caracteres multibyte pueden pasar @Size y aun así exceder. */
     @AssertTrue(message = "Password must be at most 72 bytes in UTF-8")
     public boolean isPasswordWithinBcryptLimit() {
         return PasswordRules.fitsBcrypt(password);
     }
 
-    /** NFR-SEC001: el toString autogenerado de un record imprimiría la contraseña. */
     @Override
     public String toString() {
         return "RegisterUserRequest[username=" + username + ", email=" + email + ", password=***]";

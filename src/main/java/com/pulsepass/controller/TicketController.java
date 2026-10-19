@@ -16,10 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Expone TicketService. La consulta de tickets pagados por evento vive bajo /api/events/...
- * (PRD §8.5), por eso el mapeo base es /api y cada método declara su ruta completa.
- */
 @RestController
 @RequestMapping("/api")
 public class TicketController {

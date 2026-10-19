@@ -20,7 +20,6 @@ public class VenueServiceImpl implements VenueService {
         this.venueMapper = venueMapper;
     }
 
-    /** BR-VENUE-001 */
     @Override
     @Transactional(readOnly = true)
     public VenueResponse findByCode(String code) {
@@ -29,7 +28,6 @@ public class VenueServiceImpl implements VenueService {
                 .orElseThrow(() -> ResourceNotFoundException.of("Venue", code));
     }
 
-    /** BR-VENUE-002: solo venues con active = true. */
     @Override
     @Transactional(readOnly = true)
     public List<VenueResponse> findActiveVenues() {

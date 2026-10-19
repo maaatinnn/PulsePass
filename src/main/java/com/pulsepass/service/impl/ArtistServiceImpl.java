@@ -20,7 +20,6 @@ public class ArtistServiceImpl implements ArtistService {
         this.artistMapper = artistMapper;
     }
 
-    /** BR-ARTIST-001 */
     @Override
     @Transactional(readOnly = true)
     public ArtistResponse findById(Long id) {
@@ -29,7 +28,6 @@ public class ArtistServiceImpl implements ArtistService {
                 .orElseThrow(() -> ResourceNotFoundException.of("Artist", id));
     }
 
-    /** BR-ARTIST-001 */
     @Override
     @Transactional(readOnly = true)
     public ArtistResponse findByStageName(String stageName) {
@@ -38,7 +36,6 @@ public class ArtistServiceImpl implements ArtistService {
                 .orElseThrow(() -> ResourceNotFoundException.of("Artist", stageName));
     }
 
-    /** BR-ARTIST-002: solo artistas activos. */
     @Override
     @Transactional(readOnly = true)
     public List<ArtistResponse> findActiveArtists() {

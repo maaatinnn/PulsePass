@@ -28,8 +28,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(UserController.class)
-// Fase 4: estos tests verifican comportamiento funcional, no seguridad; por eso corren con una identidad
-// que cumple cualquier regla de rol. Las restricciones por rol se prueban en SecurityRulesTest.
+
 @Import(SecurityTestConfig.class)
 @WithMockUser(roles = {"USER", "STAFF", "ADMIN"})
 class UserControllerTest {
@@ -170,7 +169,7 @@ class UserControllerTest {
 
     @Test
     void TEST_SEC_USR_002_register_passwordOver72Bytes_returns400() throws Exception {
-        // 40 caracteres de 2 bytes = 80 bytes: pasa @Size(max = 72) pero BCrypt truncaría.
+
         String multibyte = VALID_BODY.replace("UnaFraseSeguraLarga2026!", "é".repeat(40));
 
         mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON).content(multibyte))

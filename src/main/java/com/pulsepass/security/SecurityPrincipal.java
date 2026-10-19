@@ -7,10 +7,6 @@ import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-/**
- * Identidad autenticada. Lleva el id persistente del usuario: la autorización de propiedad
- * (fase 4, segunda mitad) compara contra {@link #getUserId()}, nunca contra un email del request.
- */
 public class SecurityPrincipal implements UserDetails, CredentialsContainer {
 
     private final Long userId;
@@ -38,7 +34,6 @@ public class SecurityPrincipal implements UserDetails, CredentialsContainer {
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
 
-    /** Spring Security lo invoca tras autenticar: el hash no debe viajar en el contexto de seguridad. */
     @Override
     public void eraseCredentials() {
         this.passwordHash = null;

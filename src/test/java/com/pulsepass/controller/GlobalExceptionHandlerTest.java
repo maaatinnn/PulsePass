@@ -18,10 +18,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-/** Cubre los casos del GlobalExceptionHandler que no dependen de un Service concreto (500, 405). */
 @WebMvcTest(VenueController.class)
-// Fase 4: estos tests verifican comportamiento funcional, no seguridad; por eso corren con una identidad
-// que cumple cualquier regla de rol. Las restricciones por rol se prueban en SecurityRulesTest.
+
 @Import(SecurityTestConfig.class)
 @WithMockUser(roles = {"USER", "STAFF", "ADMIN"})
 class GlobalExceptionHandlerTest {

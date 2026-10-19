@@ -8,7 +8,6 @@ import jakarta.persistence.Enumerated;
 import java.io.Serializable;
 import java.util.Objects;
 
-/** Clave compuesta (user_id, role) de la tabla user_roles. */
 @Embeddable
 public class UserRoleId implements Serializable {
 

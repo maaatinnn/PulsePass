@@ -55,7 +55,7 @@ src/main/java/com/pulsepass
 
 src/main/resources
 ├── application.yml
-└── db/migration     V1, V2 y V3
+└── db/migration     V1, V2, V3 y V4
 
 src/test/java/com/pulsepass
 ├── support          PostgresContainerConfig, AbstractPostgresIT, TestData
@@ -100,6 +100,7 @@ Decisiones que tomamos:
 | V1__create_schema.sql | Crea las 7 tablas con sus PK, FK, UNIQUE, CHECK e índices. |
 | V2__insert_initial_artists.sql | Inserta a Solar Beat, Neon Waves, Caribbean Sound, Ocean Drive y Digital Pulse. |
 | V3__add_streaming_url_to_event.sql | Agrega streaming_url VARCHAR(500) (nullable) a events. |
+| V4__security_credentials_roles.sql | Agrega `user_credentials` (hash BCrypt) y `user_roles` (USER, STAFF, ADMIN) para la fase de seguridad. |
 
 Restricciones que aplica PostgreSQL:
 
@@ -113,7 +114,7 @@ Restricciones que aplica PostgreSQL:
 | Sin pares evento-artista repetidos | PK compuesta en event_artists |
 | Ticket con usuario y evento reales | FK y NOT NULL en user_id y event_id |
 
-Una migración que ya se aplicó no se edita. Los cambios nuevos van en una versión nueva (V4, V5...).
+Una migración que ya se aplicó no se edita. Los cambios nuevos van en una versión nueva (V5, V6...).
 
  Consultas
 
@@ -140,7 +141,7 @@ Pruebas
 
 | Clase | Qué prueba |
 |---|---|
-| FlywayMigrationIT | Que V1, V2 y V3 se apliquen desde una base vacía y que Hibernate solo valide. |
+| FlywayMigrationIT | Que las migraciones (V1–V4) se apliquen desde una base vacía y que Hibernate solo valide. |
 | VenuePersistenceTest | Venue: guardar, código único, capacidad válida y relación con eventos. |
 | EventRepositoryIT` | Eventos: consulta por código, por venue, publicados en orden, enums y streaming_url. |
 | EventArtistIT | Relación N:M, artistas repetidos y consulta por artista. |
@@ -270,7 +271,7 @@ contrato de autorización, persistencia de credenciales y roles, contraseñas co
 
 | Componente / Etapa | Descripción | Ubicación |
 |---|---|---|
-| 1. Contrato & Matriz | Matriz de autorización de las 20 rutas + auth | `docs/SEGURIDAD_MATRIZ.md` |
+| 1. Contrato & Matriz | Matriz de autorización de las 20 rutas + auth | `PRD_PulsePass_Capa_Seguridad_Spring_Security_JJWT.md` y `tests/e2e/inventario-etapa1.md` |
 | 2. Persistencia Flyway | Migración `V4__security_credentials_roles.sql`, tablas `user_credentials` y `user_roles` | `src/main/resources/db/migration/` |
 | 3. Autenticación & Passwords | Hashing BCrypt, `SecurityPrincipal`, `CustomUserDetailsService` | `src/main/java/com/pulsepass/security/` |
 | 4. JWT & Filtros | Emisión y validación con JJWT 0.13.0, `JwtAuthenticationFilter` (Bearer token) | `src/main/java/com/pulsepass/security/` |
@@ -300,3 +301,32 @@ Comandos de prueba:
 # Ejecutar todas las suites de unit tests, MockMvc y pruebas de integración JWT:
 mvn test -Dtest=JwtServiceTest,AuthServiceImplTest,UserServiceImplTest,TicketServiceImplTest,VenueArtistServicesTest,EventServiceImplTest,VenueControllerTest,ControllerLayerDesignTest,GlobalExceptionHandlerTest,UserControllerTest,SecurityRulesTest,TicketControllerTest,AuthControllerTest,EventControllerTest,ArtistControllerTest,CustomUserDetailsServiceTest,AuthorizationServiceTest,MappersTest,ServiceLayerDesignTest,TicketPricingPolicyTest,SecurityJwtIntegrationTest
 ```
+
+
+Pruebas E2E manuales con Postman (fase 5)
+
+Verifica la API real (Spring Boot + Spring Security + PostgreSQL) desde un cliente HTTP, sin mocks y sin scripts de Postman:
+cada petición se envía a mano con **Send** y se compara con el resultado esperado. Todo vive en `tests/e2e/` (la carpeta
+`postman/` de la raíz es el espejo de la misma colección en el formato de Postman con Git).
+
+| Qué | Dónde |
+|---|---|
+| Guía paso a paso (base, app, Postman, tokens, SQL, cierre) | `tests/e2e/README.md` |
+| Colección v2.1 (22 rutas, 108 casos base, Flujos A–E) y ambiente | `tests/e2e/postman/` |
+| Orden de ejecución con casillas | `tests/e2e/checklist-e2e-manual.md` |
+| Bitácora, consolidación y acta de cierre | `tests/e2e/registro-ejecucion-manual.md` |
+| Cobertura ruta → casos, roles y trazabilidad al PRD | `tests/e2e/matriz-cobertura.md` |
+| Datos de prueba y scripts SQL (solo base `pulsepass_e2e`) | `tests/e2e/fixtures/` |
+| Inventario de rutas contra el código real | `tests/e2e/inventario-etapa1.md` |
+
+Resumen de arranque (detalle en `tests/e2e/README.md`):
+
+```bash
+docker compose up -d
+docker compose exec postgres psql -U pulsepass -c "CREATE DATABASE pulsepass_e2e;"
+export DB_URL=jdbc:postgresql://localhost:5432/pulsepass_e2e
+export PULSEPASS_JWT_SECRET_BASE64=$(openssl rand -base64 32)
+mvn spring-boot:run          # otra terminal: aplicar tests/e2e/fixtures/seed-e2e.sql
+```
+
+Los resultados reales se anotan en la bitácora; la colección por sí sola no demuestra que la API funcione.
