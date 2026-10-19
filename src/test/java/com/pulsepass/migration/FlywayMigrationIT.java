@@ -17,12 +17,12 @@ class FlywayMigrationIT extends AbstractPostgresIT {
     @Autowired Environment environment;
 
     @Test
-    void appliesV1V2V3FromEmptyDatabase() {
+    void appliesV1ToV4FromEmptyDatabase() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history WHERE success = true ORDER BY installed_rank",
                 String.class);
 
-        assertThat(versions).containsExactly("1", "2", "3");
+        assertThat(versions).containsExactly("1", "2", "3", "4");
     }
 
     @Test
@@ -53,6 +53,23 @@ class FlywayMigrationIT extends AbstractPostgresIT {
 
         assertThat(column.get("is_nullable")).isEqualTo("YES");
         assertThat(((Number) column.get("character_maximum_length")).intValue()).isEqualTo(500);
+    }
+
+    @Test
+    void v4CreatesCredentialsAndRolesTables() {
+        List<String> tables = jdbc.queryForList(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
+                String.class);
+
+        assertThat(tables).contains("user_credentials", "user_roles");
+    }
+
+    @Test
+    void v4GivesNoCredentialsToExistingUsers_neverInventsPasswords() {
+        // En una base vacía no hay legados, pero el INSERT de V4 no debe haber creado credenciales.
+        Integer credentials = jdbc.queryForObject("SELECT COUNT(*) FROM user_credentials", Integer.class);
+
+        assertThat(credentials).isZero();
     }
 
     @Test

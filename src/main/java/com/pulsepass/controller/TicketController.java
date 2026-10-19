@@ -25,24 +25,30 @@ import org.springframework.web.bind.annotation.RestController;
 public class TicketController {
 
     private final TicketService ticketService;
+    private final com.pulsepass.security.AuthorizationService authorizationService;
 
-    public TicketController(TicketService ticketService) {
+    public TicketController(TicketService ticketService,
+                            com.pulsepass.security.AuthorizationService authorizationService) {
         this.ticketService = ticketService;
+        this.authorizationService = authorizationService;
     }
 
     @PostMapping("/tickets")
     public ResponseEntity<TicketResponse> purchase(@Valid @RequestBody PurchaseTicketRequest request) {
+        authorizationService.validateTicketPurchaseOwnership(request.userEmail());
         TicketResponse created = ticketService.purchase(request);
         return ResponseEntity.created(URI.create("/api/tickets/" + created.ticketCode())).body(created);
     }
 
     @GetMapping("/tickets/{ticketCode}")
     public ResponseEntity<TicketResponse> findByCode(@PathVariable String ticketCode) {
+        authorizationService.validateTicketOwnership(ticketCode);
         return ResponseEntity.ok(ticketService.findByCode(ticketCode));
     }
 
     @GetMapping("/tickets/by-user")
     public ResponseEntity<List<TicketResponse>> findByUserEmail(@RequestParam String email) {
+        authorizationService.validateUserResourceAccessByEmail(email);
         return ResponseEntity.ok(ticketService.findByUserEmail(email));
     }
 
@@ -53,6 +59,7 @@ public class TicketController {
 
     @PatchMapping("/tickets/{ticketCode}/cancel")
     public ResponseEntity<TicketResponse> cancel(@PathVariable String ticketCode) {
+        authorizationService.validateTicketCancelOwnership(ticketCode);
         return ResponseEntity.ok(ticketService.cancel(ticketCode));
     }
 

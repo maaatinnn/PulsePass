@@ -1,4 +1,4 @@
-﻿Taller de PulsePass
+Taller de PulsePass
 Proyecto académico (persistencia, servicios y API REST) de una plataforma de eventos, artistas y entradas.
 Incluye el modelo relacional, las migraciones con Flyway, las entidades JPA, los repositories de
 Spring Data y las pruebas de integración contra un PostgreSQL real.
@@ -260,4 +260,43 @@ inválido nunca lo invoca (`verify(..., never())`).
 ```bash
 mvn clean test                                   # todo el proyecto
 mvn test -Dtest='*ControllerTest,ControllerLayerDesignTest,GlobalExceptionHandlerTest'   # solo la fase 3
+```
+
+
+Capa de seguridad (fase 4 — Estado Final Completo)
+
+Implementa de forma completa el PRD "Capa de Seguridad con Spring Security y JJWT":
+contrato de autorización, persistencia de credenciales y roles, contraseñas con BCrypt, login con emisión y validación de JWT, filtro de seguridad Bearer (`JwtAuthenticationFilter`), servicio de autorización con anti-IDOR (`AuthorizationService`), control de roles y visibilidad de eventos no publicados.
+
+| Componente / Etapa | Descripción | Ubicación |
+|---|---|---|
+| 1. Contrato & Matriz | Matriz de autorización de las 20 rutas + auth | `docs/SEGURIDAD_MATRIZ.md` |
+| 2. Persistencia Flyway | Migración `V4__security_credentials_roles.sql`, tablas `user_credentials` y `user_roles` | `src/main/resources/db/migration/` |
+| 3. Autenticación & Passwords | Hashing BCrypt, `SecurityPrincipal`, `CustomUserDetailsService` | `src/main/java/com/pulsepass/security/` |
+| 4. JWT & Filtros | Emisión y validación con JJWT 0.13.0, `JwtAuthenticationFilter` (Bearer token) | `src/main/java/com/pulsepass/security/` |
+| 5. Autorización & Anti-IDOR | `AuthorizationService` para verificar propiedad de recursos y filtrar eventos no publicados en `GET /api/events/by-artist` y `GET /api/events/{code}` | `src/main/java/com/pulsepass/security/` |
+| 6. Pruebas de integración | Pruebas de integración de seguridad con JWT reales firmados | `src/test/java/com/pulsepass/security/SecurityJwtIntegrationTest.java` |
+
+Variables de entorno (ver `.env.example`; no versionar el secreto en producción):
+
+```bash
+export PULSEPASS_JWT_SECRET_BASE64=$(openssl rand -base64 32)   # obligatoria: sin ella la app no arranca
+export PULSEPASS_JWT_ISSUER=pulsepass-api                       # opcional
+```
+
+Operaciones y Reglas de Seguridad:
+
+- `POST /api/users`: Público. Registro atómico de usuario con contraseña (12-72 caracteres) y asignación automática de `ROLE_USER`.
+- `POST /api/auth/login`: Público. Recibe `{identifier, password}` y emite JWT firmado HS256 con vencimiento de 15 minutos.
+- `GET /api/auth/me`: Autenticado (Bearer token). Retorna los datos del principal autenticado.
+- `POST /api/tickets`: Requiere `ROLE_USER`. Valida estrictamente que `userEmail` coincida con la identidad del principal autenticado (anti-IDOR).
+- `GET /api/events/by-artist`: Público para eventos `PUBLISHED`. Eventos en borrador u otros estados requieren `ROLE_STAFF` o `ROLE_ADMIN`.
+- `GET /api/events/{eventCode}`: Público para eventos `PUBLISHED`. Si no está publicado, exige `ROLE_STAFF` o `ROLE_ADMIN`.
+- Errores de seguridad (401 Unauthorized, 403 Forbidden) mantienen el contrato estandarizado `ErrorResponse`.
+
+Comandos de prueba:
+
+```bash
+# Ejecutar todas las suites de unit tests, MockMvc y pruebas de integración JWT:
+mvn test -Dtest=JwtServiceTest,AuthServiceImplTest,UserServiceImplTest,TicketServiceImplTest,VenueArtistServicesTest,EventServiceImplTest,VenueControllerTest,ControllerLayerDesignTest,GlobalExceptionHandlerTest,UserControllerTest,SecurityRulesTest,TicketControllerTest,AuthControllerTest,EventControllerTest,ArtistControllerTest,CustomUserDetailsServiceTest,AuthorizationServiceTest,MappersTest,ServiceLayerDesignTest,TicketPricingPolicyTest,SecurityJwtIntegrationTest
 ```

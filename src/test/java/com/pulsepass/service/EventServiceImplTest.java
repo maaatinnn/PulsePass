@@ -48,6 +48,7 @@ class EventServiceImplTest {
     @Mock private VenueRepository venueRepository;
     @Mock private ArtistRepository artistRepository;
     @Mock private EventMapper eventMapper;
+    @Mock private com.pulsepass.security.AuthorizationService authorizationService;
 
     private EventServiceImpl service;
 
@@ -55,7 +56,7 @@ class EventServiceImplTest {
     void setUp() {
         Clock clock = Clock.fixed(NOW.atZone(ZONE).toInstant(), ZONE);
         service = new EventServiceImpl(eventRepository, venueRepository, artistRepository,
-                eventMapper, clock);
+                eventMapper, clock, authorizationService);
     }
 
     // ---------- helpers

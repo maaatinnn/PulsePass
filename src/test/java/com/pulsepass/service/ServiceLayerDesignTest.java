@@ -3,6 +3,7 @@ package com.pulsepass.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.pulsepass.service.impl.ArtistServiceImpl;
+import com.pulsepass.service.impl.AuthServiceImpl;
 import com.pulsepass.service.impl.EventServiceImpl;
 import com.pulsepass.service.impl.TicketServiceImpl;
 import com.pulsepass.service.impl.UserServiceImpl;
@@ -21,10 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 class ServiceLayerDesignTest {
 
     private static final List<Class<?>> INTERFACES = List.of(
-            VenueService.class, ArtistService.class, EventService.class, UserService.class, TicketService.class);
+            VenueService.class, ArtistService.class, EventService.class, UserService.class, TicketService.class,
+            AuthService.class);
     private static final List<Class<?>> IMPLEMENTATIONS = List.of(
             VenueServiceImpl.class, ArtistServiceImpl.class, EventServiceImpl.class,
-            UserServiceImpl.class, TicketServiceImpl.class);
+            UserServiceImpl.class, TicketServiceImpl.class, AuthServiceImpl.class);
     private static final Set<String> WRITE_METHODS =
             Set.of("create", "publish", "addArtist", "register", "purchase", "cancel", "markAsUsed");
 

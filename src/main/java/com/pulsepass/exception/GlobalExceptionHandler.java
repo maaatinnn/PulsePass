@@ -6,9 +6,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -65,6 +68,31 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ErrorResponse> handleBusinessRule(BusinessRuleException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), Map.of());
+    }
+
+    /** Login fallido (FR-SECAUTH-003): mensaje genérico, no revela si el usuario existe. */
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "Credenciales inválidas", Map.of());
+    }
+
+    /** Sin identidad válida (también lo invoca RestAuthenticationEntryPoint para errores del filtro). */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
+        ResponseEntity<ErrorResponse> response =
+                build(HttpStatus.UNAUTHORIZED, "Autenticación requerida o token inválido", Map.of());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
+                .body(response.getBody());
+    }
+
+    /**
+     * Identidad válida sin permiso (también lo invoca RestAccessDeniedHandler). Sin este handler,
+     * un AccessDeniedException lanzado por @PreAuthorize caería en el catch-all y devolvería 500.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return build(HttpStatus.FORBIDDEN, "No tiene permisos para realizar esta operación", Map.of());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
