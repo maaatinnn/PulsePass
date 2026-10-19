@@ -47,7 +47,7 @@ class UserServiceImplTest {
 
     private static RegisterUserRequest request(LocalDate birthDate) {
         return new RegisterUserRequest("andrea", "andrea@email.com", "Andrea", "Perez",
-                "3001234567", "Santa Marta", birthDate);
+                "3001234567", "Santa Marta", birthDate, "UnaFraseSeguraLarga2026!");
     }
 
     private static UserResponse response() {
@@ -124,7 +124,7 @@ class UserServiceImplTest {
 
     @Test
     void register_missingUsername_throwsBusinessRule() {
-        RegisterUserRequest invalid = new RegisterUserRequest(null, "a@b.com", "A", "B", null, null, null);
+        RegisterUserRequest invalid = new RegisterUserRequest(null, "a@b.com", "A", "B", null, null, null, "UnaFraseSeguraLarga2026!");
 
         assertThatThrownBy(() -> service.register(invalid))
                 .isInstanceOf(BusinessRuleException.class)

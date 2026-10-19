@@ -36,17 +36,20 @@ public class EventServiceImpl implements EventService {
     private final ArtistRepository artistRepository;
     private final EventMapper eventMapper;
     private final Clock clock;
+    private final com.pulsepass.security.AuthorizationService authorizationService;
 
     public EventServiceImpl(EventRepository eventRepository,
                             VenueRepository venueRepository,
                             ArtistRepository artistRepository,
                             EventMapper eventMapper,
-                            Clock clock) {
+                            Clock clock,
+                            com.pulsepass.security.AuthorizationService authorizationService) {
         this.eventRepository = eventRepository;
         this.venueRepository = venueRepository;
         this.artistRepository = artistRepository;
         this.eventMapper = eventMapper;
         this.clock = clock;
+        this.authorizationService = authorizationService;
     }
 
     @Override
@@ -156,8 +159,13 @@ public class EventServiceImpl implements EventService {
         Artist artist = artistRepository.findByStageNameIgnoreCase(stageName)
                 .orElseThrow(() -> ResourceNotFoundException.of("Artist", stageName));
 
-        return eventRepository.findByArtistStageName(artist.getStageName())
-                .stream()
+        List<Event> events = eventRepository.findByArtistStageName(artist.getStageName());
+        if (authorizationService == null || !authorizationService.canViewNonPublishedEvents()) {
+            events = events.stream()
+                    .filter(e -> e.getStatus() == EventStatus.PUBLISHED)
+                    .toList();
+        }
+        return events.stream()
                 .map(eventMapper::toSummary)
                 .toList();
     }

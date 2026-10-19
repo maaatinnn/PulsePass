@@ -1,5 +1,6 @@
 package com.pulsepass.dto.request;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,5 +32,22 @@ public record RegisterUserRequest(
         String city,
 
         @NotNull(message = "Birth date is required")
-        LocalDate birthDate
-) {}
+        LocalDate birthDate,
+
+        @NotBlank(message = "Password is required")
+        @Size(min = 12, max = 72, message = "Password must have between 12 and 72 characters")
+        String password
+) {
+
+    /** BCrypt solo usa los primeros 72 BYTES: caracteres multibyte pueden pasar @Size y aun así exceder. */
+    @AssertTrue(message = "Password must be at most 72 bytes in UTF-8")
+    public boolean isPasswordWithinBcryptLimit() {
+        return PasswordRules.fitsBcrypt(password);
+    }
+
+    /** NFR-SEC001: el toString autogenerado de un record imprimiría la contraseña. */
+    @Override
+    public String toString() {
+        return "RegisterUserRequest[username=" + username + ", email=" + email + ", password=***]";
+    }
+}

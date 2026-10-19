@@ -22,9 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventController {
 
     private final EventService eventService;
+    private final com.pulsepass.security.AuthorizationService authorizationService;
 
-    public EventController(EventService eventService) {
+    public EventController(EventService eventService,
+                           com.pulsepass.security.AuthorizationService authorizationService) {
         this.eventService = eventService;
+        this.authorizationService = authorizationService;
     }
 
     @PostMapping
@@ -35,6 +38,7 @@ public class EventController {
 
     @GetMapping("/{eventCode}")
     public ResponseEntity<EventResponse> findByCode(@PathVariable String eventCode) {
+        authorizationService.validateEventVisibility(eventCode);
         return ResponseEntity.ok(eventService.findByCode(eventCode));
     }
 

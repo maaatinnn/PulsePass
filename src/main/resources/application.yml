@@ -15,3 +15,11 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+pulsepass:
+  security:
+    jwt:
+      issuer: ${PULSEPASS_JWT_ISSUER:pulsepass-api}
+      # Base64 de >= 32 bytes aleatorios. SIN valor por defecto a propósito: la app no arranca sin él (SEC004).
+      secret-base64: ${PULSEPASS_JWT_SECRET_BASE64}
+      access-token-ttl: PT15M

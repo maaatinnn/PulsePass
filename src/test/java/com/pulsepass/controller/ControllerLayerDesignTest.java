@@ -15,7 +15,7 @@ class ControllerLayerDesignTest {
 
     private static final List<Class<?>> CONTROLLERS = List.of(
             VenueController.class, EventController.class, ArtistController.class,
-            UserController.class, TicketController.class);
+            UserController.class, TicketController.class, AuthController.class);
 
     @Test
     void AC_CTRL_015_noControllerDependsOnARepository() {
