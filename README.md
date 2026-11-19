@@ -196,7 +196,7 @@ mappers MapStruct, excepciones de dominio y reglas de negocio (BR-*) con transac
 src/main/java/com/pulsepass
 ├── config       ClockConfig (Clock inyectable para reglas basadas en "ahora")
 ├── dto
-│   ├── request  CreateEventRequest, RegisterUserRequest, PurchaseTicketRequest
+│   ├── request  CreateEventRequest, CreateArtistRequest, CreateVenueRequest, RegisterUserRequest, PurchaseTicketRequest
 │   └── response VenueResponse, ArtistResponse, EventResponse, EventSummaryResponse, UserResponse, TicketResponse
 ├── mapper       VenueMapper, ArtistMapper, EventMapper, UserMapper, TicketMapper (MapStruct)
 ├── exception    ResourceNotFoundException, DuplicateResourceException, BusinessRuleException
@@ -223,21 +223,27 @@ sin duplicar reglas de negocio, sin tocar Repository y sin devolver entidades JP
 src/main/java/com/pulsepass
 ├── controller   VenueController, EventController, ArtistController, UserController, TicketController
 ├── dto
-│   ├── request  CreateEventRequest, RegisterUserRequest, PurchaseTicketRequest (con Bean Validation)
+│   ├── request  CreateEventRequest, CreateArtistRequest, CreateVenueRequest, RegisterUserRequest, PurchaseTicketRequest (con Bean Validation)
 │   └── response ... + ErrorResponse
 └── exception    ... + GlobalExceptionHandler (@RestControllerAdvice)
 ```
 
-Endpoints principales (20 operaciones, una por cada método público de los Services):
+Endpoints principales (26 operaciones, una por cada método público de los Services):
 
 | Método | Endpoint | Éxito |
 |---|---|---|
 | GET | /api/venues/{code} · /api/venues/active | 200 |
+| GET | /api/venues (todas, incluye inactivas; solo ADMIN) | 200 |
+| POST | /api/venues (solo ADMIN) | 201 |
+| DELETE | /api/venues/{code} (solo ADMIN) | 204 |
 | POST | /api/events | 201 |
 | GET | /api/events/{eventCode} · /api/events/published · /api/events/by-artist?stageName= | 200 |
 | PATCH | /api/events/{eventCode}/publish | 200 |
 | POST | /api/events/{eventCode}/artists/{artistId} | 200 |
 | GET | /api/artists/{id} · /api/artists/by-stage-name?stageName= · /api/artists/active | 200 |
+| GET | /api/artists (todos, incluye inactivos; solo ADMIN) | 200 |
+| POST | /api/artists (solo ADMIN) | 201 |
+| DELETE | /api/artists/{id} (solo ADMIN) | 204 |
 | POST | /api/users | 201 |
 | GET | /api/users/by-email?email= · /api/users/by-username?username= | 200 |
 | POST | /api/tickets | 201 |
@@ -291,6 +297,7 @@ Operaciones y Reglas de Seguridad:
 - `POST /api/auth/login`: Público. Recibe `{identifier, password}` y emite JWT firmado HS256 con vencimiento de 15 minutos.
 - `GET /api/auth/me`: Autenticado (Bearer token). Retorna los datos del principal autenticado.
 - `POST /api/tickets`: Requiere `ROLE_USER`. Valida estrictamente que `userEmail` coincida con la identidad del principal autenticado (anti-IDOR).
+- `GET /api/artists`, `POST /api/artists`, `DELETE /api/artists/{id}`, `GET /api/venues`, `POST /api/venues` y `DELETE /api/venues/{code}`: Requieren `ROLE_ADMIN`. La eliminación se rechaza con 409 si el artista participa en algún evento o si la sede tiene eventos asociados (no se borran eventos ni tickets en cascada). Las lecturas `GET /api/artists/**` y `GET /api/venues/**` (activos, por id/código, por nombre artístico) siguen siendo públicas.
 - `GET /api/events/by-artist`: Público para eventos `PUBLISHED`. Eventos en borrador u otros estados requieren `ROLE_STAFF` o `ROLE_ADMIN`.
 - `GET /api/events/{eventCode}`: Público para eventos `PUBLISHED`. Si no está publicado, exige `ROLE_STAFF` o `ROLE_ADMIN`.
 - Errores de seguridad (401 Unauthorized, 403 Forbidden) mantienen el contrato estandarizado `ErrorResponse`.
@@ -330,3 +337,63 @@ mvn spring-boot:run          # otra terminal: aplicar tests/e2e/fixtures/seed-e2
 ```
 
 Los resultados reales se anotan en la bitácora; la colección por sí sola no demuestra que la API funcione.
+
+
+# Frontend (Fase 5): React + TypeScript + Tailwind
+
+SPA que consume la API REST segura (26 operaciones de la Fase 3 + 3 de autenticación de la Fase 4).
+El frontend presenta y orquesta; las reglas de negocio (edad mínima, capacidad, estados, propiedad,
+permisos) las decide el backend y la UI solo muestra el resultado (400/401/403/404/409/500).
+
+## Stack
+
+Node 22.22+, Vite, React 19, TypeScript estricto, Tailwind CSS v4, React Router v8 (`createBrowserRouter` +
+`RouterProvider`, importando de `react-router`), TanStack Query, React Hook Form + zod, Vitest + Testing Library + MSW.
+
+## Variables de entorno
+
+Ver `.env.example`. El frontend solo usa `VITE_API_BASE_URL` (por defecto `/api`; en desarrollo el
+proxy de Vite redirige `/api` a `http://localhost:8080`). No hay secretos en el bundle.
+
+## Comandos
+
+```bash
+npm install
+npm run dev      # servidor de desarrollo (requiere la API en http://localhost:8080)
+npm run lint     # ESLint
+npm run build    # tsc estricto + vite build
+npm test         # Vitest + MSW (70 pruebas, sin backend real)
+```
+
+## Roles de demostración
+
+| Rol | Qué puede hacer | Cómo obtenerlo |
+|-----|-----------------|----------------|
+| Visitante | Ver cartelera, artistas y sedes; registrarse e iniciar sesión | — |
+| USER | Comprar, ver y cancelar sus tickets, ver su cuenta | Registro en `/registro` (el rol inicial siempre es USER) |
+| STAFF | Validar ingreso y ver tickets pagados por evento | Asignar el rol en la tabla `user_roles` (semilla local de la Fase 4) |
+| ADMIN | Crear/publicar eventos, asociar artistas y crear/eliminar artistas y sedes, además de lo de STAFF | Asignar el rol en la tabla `user_roles` (semilla local de la Fase 4) |
+
+Escenario de referencia: sede `VEN-SMR-01`, evento `CMF-2026` (DRAFT → PUBLISHED), artistas Solar Beat,
+Neon Waves y Caribbean Sound.
+
+## Rutas principales
+
+| Ruta | Acceso |
+|------|--------|
+| `/`, `/eventos`, `/eventos/:eventCode`, `/artistas`, `/artistas/:id`, `/sedes`, `/sedes/:code` | Público |
+| `/login`, `/registro` | Solo anónimo |
+| `/cuenta` | Autenticado |
+| `/mis-tickets`, `/mis-tickets/:ticketCode`, `/compra/confirmacion/:ticketCode` | USER |
+| `/staff/validacion`, `/staff/eventos/:eventCode/tickets` | STAFF, ADMIN |
+| `/admin/eventos`, `/admin/eventos/nuevo`, `/admin/eventos/:eventCode`, `/admin/artistas`, `/admin/sedes` | ADMIN |
+| `/403`, `*` | Páginas de error |
+
+Las guardas de ruta (`RutaProtegida`, `RutaPorRol`) son solo experiencia de usuario: la seguridad real la aplica el servidor.
+El token JWT vive en `sessionStorage` y en memoria, y viaja solo en el encabezado `Authorization: Bearer`.
+
+## Limitaciones conocidas (brechas del backend, PRD 3.5)
+
+- No existe listado completo de eventos: el panel ADMIN busca por código y recuerda los creados en la sesión (GAP-01).
+- "Mis tickets" usa el email de `/api/auth/me` (GAP-03).
+- Sin refresh token: al expirar el token (15 min) se cierra la sesión y se vuelve a `/login` (GAP-08).
