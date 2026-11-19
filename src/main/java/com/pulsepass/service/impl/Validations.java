@@ -18,4 +18,11 @@ final class Validations {
             throw new BusinessRuleException(fieldName + " is required.");
         }
     }
+
+    static String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
 }

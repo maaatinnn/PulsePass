@@ -27,7 +27,7 @@ class ServiceLayerDesignTest {
             VenueServiceImpl.class, ArtistServiceImpl.class, EventServiceImpl.class,
             UserServiceImpl.class, TicketServiceImpl.class, AuthServiceImpl.class);
     private static final Set<String> WRITE_METHODS =
-            Set.of("create", "publish", "addArtist", "register", "purchase", "cancel", "markAsUsed");
+            Set.of("create", "publish", "addArtist", "register", "purchase", "cancel", "markAsUsed", "delete");
 
     @Test
     void SRV_001_noServiceContractExposesJpaEntities() {

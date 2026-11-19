@@ -3,6 +3,7 @@ package com.pulsepass.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,8 +14,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.pulsepass.domain.enums.EventCategory;
 import com.pulsepass.domain.enums.EventStatus;
+import com.pulsepass.dto.request.CreateArtistRequest;
 import com.pulsepass.dto.request.CreateEventRequest;
+import com.pulsepass.dto.request.CreateVenueRequest;
+import com.pulsepass.dto.response.ArtistResponse;
 import com.pulsepass.dto.response.EventResponse;
+import com.pulsepass.dto.response.VenueResponse;
 import com.pulsepass.service.ArtistService;
 import com.pulsepass.service.AuthService;
 import com.pulsepass.service.EventService;
@@ -43,6 +48,15 @@ class SecurityRulesTest {
               "eventCode": "CMF-2026", "name": "Caribbean Music Fest 2026", "category": "MUSIC",
               "eventDate": "2026-12-20T20:00:00", "minimumAge": 18, "venueCode": "VEN-SMR-01"
             }
+            """;
+
+    private static final String ARTIST_BODY = """
+            { "stageName": "Solar Beat", "country": "Colombia", "genre": "Electronic" }
+            """;
+
+    private static final String VENUE_BODY = """
+            { "code": "VEN-SMR-01", "name": "Marina Convention Center", "city": "Santa Marta",
+              "address": "Calle 1", "capacity": 3 }
             """;
 
     @Autowired private MockMvc mockMvc;
@@ -187,5 +201,59 @@ class SecurityRulesTest {
     @WithMockUser(roles = "ADMIN")
     void admin_canMarkTicketAsUsed() throws Exception {
         mockMvc.perform(patch("/api/tickets/TKT-1/use")).andExpect(status().isOk());
+    }
+
+    @Test
+    void anonymous_cannotManageArtistsOrVenues_andServicesAreNotCalled() throws Exception {
+        mockMvc.perform(get("/api/artists")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/venues")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/artists").contentType(MediaType.APPLICATION_JSON).content(ARTIST_BODY))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/venues").contentType(MediaType.APPLICATION_JSON).content(VENUE_BODY))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/artists/1")).andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/venues/VEN-SMR-01")).andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(artistService, venueService);
+    }
+
+    @Test
+    @WithMockUser(roles = {"USER", "STAFF"})
+    void nonAdmin_cannotManageArtistsOrVenues_andServicesAreNotCalled() throws Exception {
+        mockMvc.perform(get("/api/artists")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/venues")).andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/artists").contentType(MediaType.APPLICATION_JSON).content(ARTIST_BODY))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/venues").contentType(MediaType.APPLICATION_JSON).content(VENUE_BODY))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/artists/1")).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/venues/VEN-SMR-01")).andExpect(status().isForbidden());
+
+        verifyNoInteractions(artistService, venueService);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void admin_canCreateListAndDeleteArtists() throws Exception {
+        when(artistService.create(any(CreateArtistRequest.class)))
+                .thenReturn(new ArtistResponse(1L, "Solar Beat", "Colombia", "Electronic", true));
+
+        mockMvc.perform(post("/api/artists").contentType(MediaType.APPLICATION_JSON).content(ARTIST_BODY))
+                .andExpect(status().isCreated());
+        mockMvc.perform(get("/api/artists")).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/artists/1")).andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void admin_canCreateListAndDeleteVenues() throws Exception {
+        when(venueService.create(any(CreateVenueRequest.class)))
+                .thenReturn(new VenueResponse(1L, "VEN-SMR-01", "Marina Convention Center", "Santa Marta",
+                        "Calle 1", 3, true));
+
+        mockMvc.perform(post("/api/venues").contentType(MediaType.APPLICATION_JSON).content(VENUE_BODY))
+                .andExpect(status().isCreated());
+        mockMvc.perform(get("/api/venues")).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/venues/VEN-SMR-01")).andExpect(status().isNoContent());
     }
 }
